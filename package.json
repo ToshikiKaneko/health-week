@@ -1,0 +1,29 @@
+{
+  "name": "health-week",
+  "version": "1.0.0",
+  "description": "",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ToshikiKaneko/health-week.git"
+  },
+  "keywords": [
+    "\u001b[A\u001b[A\u001b[A\u001b[B\u001b[B\u001b[B\u001b[B"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ToshikiKaneko/health-week/issues"
+  },
+  "homepage": "https://github.com/ToshikiKaneko/health-week#readme",
+  "dependencies": {
+    "gulp": "^3.9.1"
+  },
+  "devDependencies": {
+    "browser-sync": "^2.26.5",
+    "gulp-watch": "^5.0.1"
+  }
+}
