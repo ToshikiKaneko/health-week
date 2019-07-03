@@ -1,50 +1,77 @@
-var gulp = require("gulp");
-var rename = require("gulp-rename");
-var sass = require("gulp-sass");
-var autoprefixer = require("gulp-autoprefixer");
-var plumber = require("gulp-plumber");
-var browser = require("browser-sync");
-var typescript = require('gulp-typescript');
+const gulp        = require('gulp');
+const tsc         = require('gulp-typescript');
+const tsProject   = tsc.createProject('./tsconfig.json');
+const sourcemaps  = require('gulp-sourcemaps');
+const source      = require('vinyl-source-stream');
+const browserify  = require('browserify');
+const watchify    = require('watchify');
+const browserSync = require('browser-sync');
+const watch       = require('gulp-watch');
+const runSequence = require('run-sequence');
+const rimraf      = require('gulp-rimraf');
 
-gulp.task("server", function() {
-  browser({
-      server: {
-          baseDir: "./www"
-      }
-  });
+
+/** Compile TypeScript sources */
+gulp.task('script:compile', () => {
+    return gulp.src('src/scripts/**/*.ts')
+        .pipe(sourcemaps.init())
+        .pipe(tsProject())
+        .js
+        .pipe(sourcemaps.write())
+        .pipe(gulp.dest('build'));
 });
 
-// html
-gulp.task('html',function(){
-  gulp.src('src/**/*.html', {base: './src/'})
-      .pipe(gulp.dest("www"))
+/** Bundle JavaScript sources by Watchify */
+gulp.task('script:bundle', () => {
+    const b = browserify({
+        cache: {},
+        packageCache: {},
+        debug: true
+    });
+    const w = watchify(b);
+    w.add('build/main.js');
+    const bundle = () => {
+        return w.bundle()
+            .pipe(source('app.js'))
+            .pipe(gulp.dest('www/'))
+            .pipe(browserSync.reload({
+                stream: true
+            }));
+    };
+    w.on('update', bundle);
+    return bundle();
 });
 
-//sass
-gulp.task('sass', function() {
-  gulp.src("src/main.scss")
-      .pipe(plumber())
-      .pipe(sass({outputStyle: 'expanded'}))
-      .pipe(autoprefixer())
-      .pipe(rename('app.css'))
-      .pipe(gulp.dest("www"))
-      .pipe(browser.reload({stream:true}))
+/** Run Web server */
+gulp.task('serve', () => {
+    return browserSync.init(null, {
+        server: {
+            baseDir: 'www/'
+        },
+        reloadDelay: 1000
+    })
 });
 
-// typescript
-gulp.task('ts', function() {  
-  gulp.src('src/**/*.ts')
-      .pipe(typescript('main.js'))
-      .pipe(gulp.dest('www'))
-      .pipe(browser.reload({stream:true}))
+
+gulp.task('html', () => {
+    return gulp.src('src/**/*.html')
+        .pipe(gulp.dest('www/'))
+        .pipe(browserSync.reload({
+            stream: true
+        }));
 });
 
-//build
-gulp.task("build", ['html', 'sass', 'ts']);
 
-//タスクの自動化
-gulp.task("default", ['build', 'server'], function() {
-  gulp.watch("src/**/*.html", ["html"]);
-  gulp.watch("src/**/*.scss", ["sass"]);
-  gulp.watch("src/**/*.ts", ["ts"]);
+gulp.task('watch', () => {
+    watch('src/scripts/**/*.ts', () => gulp.start('script:compile'));
+    return watch('src/**/*.html', () => gulp.start('html'));
 });
+
+
+gulp.task('clean', () => {
+    return gulp.src(['www/', 'build/'])
+        .pipe(rimraf());
+});
+
+
+gulp.task('default', () => runSequence('clean', ['html', 'script:compile'], 'script:bundle', ['serve', 'watch']));
